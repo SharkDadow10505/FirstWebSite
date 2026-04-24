@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Calculadora UCP — Cadastro de Pedidos</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, sans-serif; background: #f5f5f5; color: #222; padding: 2rem; }
+    h1 { font-size: 1.4rem; margin-bottom: 1.5rem; }
+    h2 { font-size: 1rem; color: #555; margin: 1.5rem 0 0.75rem; }
+    .cards { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 1.5rem; }
+    .card { background: #fff; border: 1px solid #ddd; border-radius: 8px;
+            padding: 14px 18px; min-width: 130px; }
+    .card.highlight { background: #e8f0fe; border-color: #4a90e2; }
+    .card label { font-size: 11px; color: #777; display: block; margin-bottom: 4px; }
+    .card .val { font-size: 1.8rem; font-weight: bold; }
+    .card .sub { font-size: 11px; color: #999; margin-top: 2px; }
+    table { border-collapse: collapse; width: 100%; font-size: 13px; background: #fff;
+            border: 1px solid #ddd; border-radius: 8px; overflow: hidden; margin-bottom: 1.5rem; }
+    th { background: #f0f0f0; text-align: left; padding: 8px 12px; font-size: 12px; color: #555; }
+    td { padding: 7px 12px; border-top: 1px solid #eee; }
+    td.num { text-align: right; }
+    tr.total td { font-weight: bold; background: #fafafa; }
+    .formula { font-family: monospace; background: #f0f4ff; border-radius: 6px;
+                padding: 10px 14px; font-size: 13px; margin-bottom: 1rem; color: #333; }
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media (max-width: 600px) { .two-col { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+<h1>Estimativa de Software — Pontos de Caso de Uso (UCP)</h1>
+<h6>Sistema de Vendas — Cenário: Cadastro de Pedidos</h6>
+
+<h2>1ª Questão — UUCP Não Ajustado</h2>
+<div class="cards" id="uucp-cards"></div>
+<table id="uc-table">
+  <thead>
+    <tr><th>Caso de Uso</th><th>Tipo</th><th>Transações</th><th class="num">Peso</th></tr>
+  </thead>
+  <tbody></tbody>
+  <tfoot></tfoot>
+</table>
+
+<h2>2ª Questão — Fatores Técnicos e Ambientais</h2>
+<div class="two-col">
+  <div>
+    <h2>Fator Técnico (TCF)</h2>
+    <table id="tcf-table">
+      <thead><tr><th>Fator</th><th>Requisito</th><th class="num">Peso</th><th class="num">Infl.</th><th class="num">Prod.</th></tr></thead>
+      <tbody></tbody><tfoot></tfoot>
+    </table>
+    <div class="formula" id="tcf-formula"></div>
+  </div>
+  <div>
+    <h2>Fator Ambiental (EF)</h2>
+    <table id="ef-table">
+      <thead><tr><th>Fator</th><th>Descrição</th><th class="num">Peso</th><th class="num">Infl.</th><th class="num">Prod.</th></tr></thead>
+      <tbody></tbody><tfoot></tfoot>
+    </table>
+    <div class="formula" id="ef-formula"></div>
+  </div>
+</div>
+
+<h2>3ª Questão — UCP Ajustado</h2>
+<div class="cards" id="ucp-cards"></div>
+
+<h2>4ª Questão — Custo e Prazo</h2>
+<div class="cards" id="result-cards"></div>
+<div class="formula" id="prazo-formula"></div>
+
+<script>
+  // ─── Dados ────────────────────────────────────────────────────────────────
+  const uaw = 3;       // 1 ator complexo (Vendedor - GUI)
+  const useCases = [
+    { id: 'UC1', desc: 'Cadastrar Pedido',  type: 'Complexo', transactions: '> 7',  weight: 15 },
+    { id: 'UC2', desc: 'Inserir Item',      type: 'Médio',    transactions: '4–7',  weight: 10 },
+    { id: 'UC3', desc: 'Remover Item',      type: 'Simples',  transactions: '1–3',  weight:  5 },
+  ];
+  const tcfData = [
+    ['T1','Sistema distribuído',2,5], ['T2','Tempo de resposta',2,3],
+    ['T3','Eficiência',1,3],          ['T4','Processamento complexo',1,0],
+    ['T5','Código reusável',1,3],     ['T6','Facilidade de instalação',0.5,5],
+    ['T7','Facilidade de uso',0.5,5], ['T8','Portabilidade',2,5],
+    ['T9','Facilidade de mudança',1,4],['T10','Concorrência',1,4],
+    ['T11','Recursos de segurança',1,1],['T12','Acessível por terceiros',1,3],
+    ['T13','Requer treinamento especial',1,0],
+  ];
+  const efData = [
+    ['E1','Familiaridade com RUP',1.5,5],  ['E2','Experiência c/ aplicação',0.5,0],
+    ['E3','Orientação a Objetos',1,5],      ['E4','Analista experiente',0.5,5],
+    ['E5','Motivação',1,5],                 ['E6','Requisitos estáveis',2,3],
+    ['E7','Desenvolvedores meio-período',-1,0], ['E8','Linguagem difícil',-1,0],
+  ];
+
+  // ─── Helpers ──────────────────────────────────────────────────────────────
+  function card(label, value, sub = '', highlight = false) {
+    return `<div class="card ${highlight ? 'highlight' : ''}">
+      <label>${label}</label>
+      <div class="val">${value}</div>
+      ${sub ? `<div class="sub">${sub}</div>` : ''}
+    </div>`;
+  }
+
+  function buildFactorTable(tableId, data) {
+    const tbody = document.querySelector(`#${tableId} tbody`);
+    const tfoot = document.querySelector(`#${tableId} tfoot`);
+    let sum = 0;
+    data.forEach(([id, desc, w, inf]) => {
+      const prod = w * inf;
+      sum += prod;
+      tbody.innerHTML += `<tr>
+        <td>${id}</td><td>${desc}</td>
+        <td class="num">${w}</td><td class="num">${inf}</td>
+        <td class="num">${prod.toFixed(1)}</td>
+      </tr>`;
+    });
+    tfoot.innerHTML = `<tr class="total">
+      <td colspan="4">Soma total</td><td class="num">${sum.toFixed(1)}</td>
+    </tr>`;
+    return sum;
+  }
+
+  // ─── Q1: UUCP ─────────────────────────────────────────────────────────────
+  const uucw = useCases.reduce((a, c) => a + c.weight, 0);
+  const uucp = uaw + uucw;
+
+  document.getElementById('uucp-cards').innerHTML =
+    card('UAW', uaw, '1 ator complexo') +
+    card('UUCW', uucw, 'soma dos casos de uso') +
+    card('UUCP', uucp, 'UAW + UUCW', true);
+
+  const ucTbody = document.querySelector('#uc-table tbody');
+  const ucTfoot = document.querySelector('#uc-table tfoot');
+  useCases.forEach(({ id, desc, type, transactions, weight }) => {
+    ucTbody.innerHTML += `<tr>
+      <td>${id} — ${desc}</td><td>${type}</td>
+      <td>${transactions} transações</td><td class="num">${weight}</td>
+    </tr>`;
+  });
+  ucTfoot.innerHTML = `<tr class="total"><td colspan="3">Total UUCW</td><td class="num">${uucw}</td></tr>`;
+
+  // ─── Q2: TCF e EF ─────────────────────────────────────────────────────────
+  const tcfSum = buildFactorTable('tcf-table', tcfData);
+  const efSum  = buildFactorTable('ef-table',  efData);
+
+  const TCF = 0.6 + 0.01 * tcfSum;
+  const EF  = 1.4 + (-0.03 * efSum);
+
+  document.getElementById('tcf-formula').textContent =
+    `TCF = 0.6 + (0.01 × ${tcfSum.toFixed(1)}) = ${TCF.toFixed(2)}`;
+  document.getElementById('ef-formula').textContent =
+    `EF = 1.4 + (−0.03 × ${efSum.toFixed(1)}) = ${EF.toFixed(2)}`;
+
+  // ─── Q3: UCP Ajustado ─────────────────────────────────────────────────────
+  const UCP = uucp * TCF * EF;
+
+  document.getElementById('ucp-cards').innerHTML =
+    card('UUCP', uucp) +
+    card('TCF',  TCF.toFixed(2)) +
+    card('EF',   EF.toFixed(2)) +
+    card('UCP Ajustado', UCP.toFixed(2), 'UUCP × TCF × EF', true);
+
+  // ─── Q4: Custo e Prazo ────────────────────────────────────────────────────
+  const produtividade  = 20;    // h/UCP
+  const valorHora      = 120;   // R$
+  const diasUteis      = 22;
+  const horasDia       = 8;
+
+  const totalHoras     = UCP * produtividade;
+  const custo          = totalHoras * valorHora;
+  const horasMes       = diasUteis * horasDia;
+  const meses          = totalHoras / horasMes;
+  const mesesInteiros  = Math.floor(meses);
+  const diasExtras     = Math.round((meses - mesesInteiros) * diasUteis);
+
+  document.getElementById('result-cards').innerHTML =
+    card('Horas totais',  totalHoras.toFixed(0), `UCP × ${produtividade} h/UCP`) +
+    card('Custo estimado',
+         'R$ ' + custo.toLocaleString('pt-BR', { minimumFractionDigits: 2 }),
+         `× R$ ${valorHora},00/h`, true) +
+    card('Prazo', meses.toFixed(1) + ' meses',
+         `≈ ${mesesInteiros} ${mesesInteiros === 1 ? 'mês' : 'meses'} e ${diasExtras} dias úteis`);
+
+  document.getElementById('prazo-formula').textContent =
+    `${totalHoras.toFixed(0)} h ÷ ${horasMes} h/mês (${diasUteis} dias × ${horasDia} h) = ${meses.toFixed(2)} meses`;
+</script>
+</body>
+</html>
